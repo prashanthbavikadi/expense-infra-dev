@@ -5,24 +5,24 @@ pipeline {
     options {
         timeout(time: 30, unit: 'MINUTES')
         disableConcurrentBuilds()
+        ansiColor('xterm')
     }
     parameters {
-      choice(name: 'CHOICE', choices: ['One', 'Two', 'Three'], description: 'Pick something')
+        choice(name: 'action', choices: ['Apply', 'Destroy'], description: 'Pick something')
     }
     stages {
-        stage('init') {
+        stage('Init') {
             steps {
-                sh """
-                  cd 01-vpc
-                  terraform init -reconfigure
-        
-                """
+               sh """
+                cd 01-vpc
+                terraform init -reconfigure
+               """
             }
         }
-        stage('plan') {
+        stage('Plan') {
             when {
                 expression{
-                    parameters.action == apply
+                    params.action == 'Apply'
                 }
             }
             steps {
@@ -32,16 +32,16 @@ pipeline {
                 """
             }
         }
-        stage('deploy') {
+        stage('Deploy') {
+            when {
+                expression{
+                    params.action == 'Apply'
+                }
+            }
             input {
                 message "Should we continue?"
                 ok "Yes, we should."
-            }    
-            when {
-                expression{
-                    params.apply == apply 
-                }
-            }    
+            }
             steps {
                 sh """
                 cd 01-vpc
@@ -49,13 +49,13 @@ pipeline {
                 """
             }
         }
-        stage('destroy') {
+ 
+        stage('Destroy') {
             when {
                 expression{
-                    params.destory == destory 
+                    params.action == 'Destroy'
                 }
-            }    
-            
+            }
             steps {
                 sh """
                 cd 01-vpc
@@ -63,19 +63,17 @@ pipeline {
                 """
             }
         }
-    
-    
-        post { 
-        always { 
+    }
+    post {
+        always {
             echo 'I will always say Hello again!'
             deleteDir()
         }
-        success { 
+        success {
             echo 'I will run when pipeline is success'
         }
-        failure { 
+        failure {
             echo 'I will run when pipeline is failure'
         }
     }
-}
 }
