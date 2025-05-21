@@ -6,7 +6,9 @@ pipeline {
         timeout(time: 30, unit: 'MINUTES')
         disableConcurrentBuilds()
     }
-    
+    parameters {
+      choice(name: 'CHOICE', choices: ['One', 'Two', 'Three'], description: 'Pick something')
+    }
     stages {
         stage('init') {
             steps {
@@ -18,6 +20,11 @@ pipeline {
             }
         }
         stage('plan') {
+            when {
+                expression{
+                    parameters.action == apply
+                }
+            }
             steps {
                 sh """
                 cd 01-vpc
@@ -29,7 +36,12 @@ pipeline {
             input {
                 message "Should we continue?"
                 ok "Yes, we should."
-            }
+            }    
+            when {
+                expression{
+                    params.apply == apply 
+                }
+            }    
             steps {
                 sh """
                 cd 01-vpc
@@ -37,10 +49,23 @@ pipeline {
                 """
             }
         }
-        
+        stage('destroy') {
+            when {
+                expression{
+                    params.destory == destory 
+                }
+            }    
+            
+            steps {
+                sh """
+                cd 01-vpc
+                terraform destroy -auto-approve
+                """
+            }
         }
     
-    post { 
+    
+        post { 
         always { 
             echo 'I will always say Hello again!'
             deleteDir()
@@ -52,4 +77,5 @@ pipeline {
             echo 'I will run when pipeline is failure'
         }
     }
+}
 }
